@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.camera.camera2.internal.Camera2CameraInfoImpl
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
@@ -20,6 +21,7 @@ class MainActivity : AppCompatActivity() {
 
     private var imageCapture: ImageCapture? = null
     var cameraProviderFuture: ListenableFuture<ProcessCameraProvider>? = null
+    var curCameraId : Int = CameraSelector.LENS_FACING_BACK
 
     companion object {     //相当于static
         const val TAG = "MainActivity"
@@ -32,82 +34,36 @@ class MainActivity : AppCompatActivity() {
         const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
     }
 
-    fun getOutputDirectory(): File {
-        val mediaDir = externalMediaDirs.firstOrNull()?.let {
-            File(it, resources.getString(R.string.app_name)).apply { mkdirs() }
-        }
-        return if (mediaDir != null && mediaDir.exists())
-            mediaDir else filesDir
-    }
-
-    private fun allPermissionGrant(): Boolean {
-        return ActivityCompat.checkSelfPermission(
-            this,
-            android.Manifest.permission.CAMERA
-//            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        camera_capture_button.setOnClickListener {
-            if (allPermissionGrant()) {
-                capture()
-            }
-        }
-
-        camera_switch_button.setOnClickListener {
-            switchCamera(CameraSelector.LENS_FACING_FRONT)
-        }
+        initEvent()
         outputDirectory = getOutputDirectory()
+
         //1.获取ProcessCameraProvider
         cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        imageCapture = ImageCapture.Builder()
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-            .setTargetAspectRatio(AspectRatio.RATIO_16_9)
-            .build()
 
         //1.检查权限
         //2.configration usecase
         if (allPermissionGrant()) {
-            initNessarySetting()
+            switchCamera(CameraSelector.LENS_FACING_BACK)
         } else {
             ActivityCompat.requestPermissions(this, REQUIRE_PERMISSION, REQUEST_CAMERA_CODE)
         }
     }
 
-    private fun initNessarySetting() {
-        switchCamera(CameraSelector.LENS_FACING_BACK)
-    }
+    fun switchCamera(cameraId: Int) {
+        //2.检查provider可用性   ,可用后会通过addListener回调
+        cameraProviderFuture?.addListener(Runnable {
+            val cameraProvider = cameraProviderFuture?.get()
+            val cameraSelector = CameraSelector.Builder().requireLensFacing(
+                cameraId
+            ).build()
+            Log.d(TAG,"cameraID switchCamera:"+cameraId)
 
-    private fun bindPreview(cameraProvider: ProcessCameraProvider) {
-        val cameraSelector = CameraSelector.Builder().requireLensFacing(
-            CameraSelector.LENS_FACING_BACK
-        ).build()
-
-        /**
-         * 4.配置 Usecase
-         * 1.Preview
-         * 2.ImageCapture
-         * 3.ImageAnalyse
-         * 4.VideoCapture
-         */
-        val preview = Preview.Builder().build()//preview
-        imageCapture = ImageCapture.Builder()
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-            .setTargetAspectRatio(AspectRatio.RATIO_16_9)
-            .build()
-
-        /**
-         * 3.绑定到生命周期
-         * 注意第三个参数 usecase 为可变参数
-         */
-        val camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
-
-        //5.camera绑定到preview
-        preview.setSurfaceProvider(viewFinder.createSurfaceProvider(camera.cameraInfo))
+            bindPreview(cameraSelector, cameraProvider)
+        }, ContextCompat.getMainExecutor(this))
     }
 
 
@@ -121,31 +77,23 @@ class MainActivity : AppCompatActivity() {
          */
         val preview = Preview.Builder().build()//preview
 
+        imageCapture = ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+            .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+            .build()
+
+        //before rebind need unbind
+        cameraProvider?.unbindAll()
+
+
         /**
          * 3.绑定到生命周期
          * 注意第三个参数 usecase 为可变参数
          */
-        val camera = cameraProvider?.bindToLifecycle(this, selector, preview, imageCapture)
+        val  camera = cameraProvider?.bindToLifecycle(this, selector, preview, imageCapture)
 
         //5.camera绑定到preview
         preview.setSurfaceProvider(viewFinder.createSurfaceProvider(camera?.cameraInfo))
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CAMERA_CODE) {
-            Log.d(TAG, "grantresult:" + grantResults.get(0))
-
-            if (grantResults.get(0) == 0) {
-                initNessarySetting()
-            } else {
-                finish()
-            }
-        }
     }
 
     private fun capture() {
@@ -175,22 +123,57 @@ class MainActivity : AppCompatActivity() {
             })
     }
 
-
     class ImageCallback : ImageCapture.OnImageCapturedCallback() {
-
     }
 
 
-    fun switchCamera(cameraId: Int) {
-        //2.检查provider可用性   ,可用后会通过addListener回调
-        cameraProviderFuture?.addListener(Runnable {
-            val cameraProvider = cameraProviderFuture?.get()
-            val cameraSelector = CameraSelector.Builder().requireLensFacing(
-                cameraId
-            ).build()
-            bindPreview(cameraSelector, cameraProvider)
-        }, ContextCompat.getMainExecutor(this))
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CAMERA_CODE) {
+            Log.d(TAG, "grantresult:" + grantResults.get(0))
+
+            if (grantResults.get(0) == 0) {
+                switchCamera(CameraSelector.LENS_FACING_BACK)
+            } else {
+                finish()
+            }
+        }
     }
 
+
+    fun getOutputDirectory(): File {
+        val mediaDir = externalMediaDirs.firstOrNull()?.let {
+            File(it, resources.getString(R.string.app_name)).apply { mkdirs() }
+        }
+        return if (mediaDir != null && mediaDir.exists())
+            mediaDir else filesDir
+    }
+
+    private fun allPermissionGrant(): Boolean {
+        return ActivityCompat.checkSelfPermission(
+            this,
+            android.Manifest.permission.CAMERA
+//            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun initEvent() {
+        camera_capture_button.setOnClickListener {
+            if (allPermissionGrant()) {
+                capture()
+            }
+        }
+        camera_switch_button.setOnClickListener {
+            when(curCameraId){
+                CameraSelector.LENS_FACING_BACK-> curCameraId = CameraSelector.LENS_FACING_FRONT
+                else -> curCameraId = CameraSelector.LENS_FACING_BACK
+            }
+            switchCamera(curCameraId)
+        }
+    }
 
 }
