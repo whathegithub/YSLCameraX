@@ -7,7 +7,7 @@ android {
 
     defaultConfig {
         applicationId "com.ysl"
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
@@ -38,11 +38,36 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
-    def camerax_version = "1.0.0-beta03"
-// CameraX core library using camera2 implementation
-    implementation "androidx.camera:camera-camera2:$camerax_version"
-// CameraX Lifecycle Library
-    implementation "androidx.camera:camera-lifecycle:$camerax_version"
-// CameraX View class
-    implementation "androidx.camera:camera-view:1.0.0-alpha10"
+
+//    lastest-dependence
+    // CameraX core library using the camera2 implementation
+//    def camerax_version = "1.0.0-beta11"
+//    // The following line is optional, as the core library is included indirectly by camera-camera2
+//    implementation "androidx.camera:camera-core:${camerax_version}"
+//    implementation "androidx.camera:camera-camera2:${camerax_version}"
+//    // If you want to additionally use the CameraX Lifecycle library
+//    implementation "androidx.camera:camera-lifecycle:${camerax_version}"
+//    // If you want to additionally use the CameraX View class
+//    implementation "androidx.camera:camera-view:1.0.0-alpha18"
+//    // If you want to additionally use the CameraX Extensions library
+//    implementation "androidx.camera:camera-extensions:1.0.0-alpha18"
+
+    //okhttp
+//    implementation("com.squareup.okhttp3:okhttp:4.7.2")
+    //glide
+//    implementation 'com.github.bumptech.glide:glide:4.11.0'
+//    annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
+
+
+    def camerax_version = "1.0.0-alpha06"
+    implementation "androidx.camera:camera-core:${camerax_version}"
+    implementation "androidx.camera:camera-camera2:${camerax_version}"
+
+    def camerax_view_version = "1.0.0-alpha03"
+    def camerax_ext_version = "1.0.0-alpha03"
+//other
+// If you to use the Camera View class
+    implementation "androidx.camera:camera-view:$camerax_view_version"
+// If you to use Camera Extensions
+    implementation "androidx.camera:camera-extensions:$camerax_ext_version"
 }
