@@ -15,9 +15,30 @@ public class CameraRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFr
     private CameraFilter cameraFilter;
     private int textureId;
 
-    public CameraRender(CameraRootView rootView, SurfaceTexture surfaceTexture){
+    public CameraRender(CameraRootView rootView){
         this.rootView = rootView;
+
+        Log.e("jbw","CameraRender");
+    }
+
+
+    public void setSurfaceTexture(SurfaceTexture surfaceTexture){
+        if(surfaceTexture == null) {
+            return;
+        }
+
+        Log.e("jbw","setSurfaceTexture thread:"+ Thread.currentThread());
+
         this.mSurfaceTexture = surfaceTexture;
+
+
+        rootView.queueEvent(new Runnable() {
+            @Override
+            public void run() {
+                mSurfaceTexture.attachToGLContext(textureId);
+                mSurfaceTexture.setOnFrameAvailableListener(CameraRender.this);
+            }
+        });
     }
 
     /**
@@ -31,8 +52,8 @@ public class CameraRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFr
 //        GLES20.glGenTextures(1, textures, 0);
 //        int textureId = textures[0];
 //        GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES,textureId);
-        mSurfaceTexture.attachToGLContext(textureId);
-        mSurfaceTexture.setOnFrameAvailableListener(this);
+        Log.e("jbw","CameraRender onSurfaceCreated"+ Thread.currentThread());
+
 
 
         GLES20.glClearColor(0,0,0,0); // 清屏
@@ -47,11 +68,15 @@ public class CameraRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFr
 //        Surface surface = new Surface(surfaceTexture);
     }
 
+    boolean fisrFrame = true;
+
     @Override
     public void onFrameAvailable(SurfaceTexture surfaceTexture) {
         //请求执行一次onDrawFrame
-
-        Log.e("jbw","onFrameAvailable");
+        if(fisrFrame) {
+            Log.e("jbw","CameraRender onFrameAvailable");
+            fisrFrame = false;
+        }
         rootView.requestRender();
     }
     /**
@@ -62,8 +87,12 @@ public class CameraRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFr
      */
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
+        Log.e("jbw","CameraRender onSurfaceChanged");
+
         GLES20.glViewport(0,0,width,height);// 确定视口大小
     }
+
+    boolean firstDraw = true;
 
     /**
      * 绘制
@@ -71,8 +100,17 @@ public class CameraRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFr
      */
     @Override
     public void onDrawFrame(GL10 gl) {
-       mSurfaceTexture.updateTexImage();
-       cameraFilter.onDraw(mtx,textureId);
+        if(mSurfaceTexture == null) {
+            return;
+        }
+
+        if(firstDraw) {
+            Log.e("jbw","CameraRender onDrawFrame");
+            firstDraw = false;
+        }
+
+        mSurfaceTexture.updateTexImage();
+        cameraFilter.onDraw(mtx,textureId);
     }
 
 }

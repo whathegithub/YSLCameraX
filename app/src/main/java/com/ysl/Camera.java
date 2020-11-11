@@ -38,9 +38,6 @@ public class Camera extends AppCompatActivity {
         if (!allPermissionGrant()) {
             ActivityCompat.requestPermissions(this, REQUIRE_PERMISSION, REQUEST_CAMERA_CODE);
         }
-
-
-
     }
 
     private boolean allPermissionGrant() {

@@ -46,7 +46,6 @@ public class CameraFilter  {
     }
 
     public void onDraw(float[] mtx, int texture) {
-
         //传递坐标,顶点坐标,确定形状
        vertexBuffer.position(0);
         GLES20.glVertexAttribPointer(vPosition,2,GLES20.GL_FLOAT,false,0,vertexBuffer);
@@ -62,11 +61,9 @@ public class CameraFilter  {
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,texture);
         GLES20.glUniform1i(vTexture,0);
 
-
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP,0 ,4);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,0);
     }
-
 
     public void release() {
         GLES20.glDeleteProgram(program);

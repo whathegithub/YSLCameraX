@@ -1,5 +1,6 @@
 package com.ysl;
 
+import android.util.Log;
 import android.util.Size;
 
 import androidx.camera.core.CameraX;
@@ -14,6 +15,8 @@ public class CameraHelper  {
     }
 
     private static Preview getPreview(Preview.OnPreviewOutputUpdateListener listener) {
+        Log.e("jbw","CameraHelper init");
+
         PreviewConfig previewConfig = new PreviewConfig.Builder()
                 .setTargetResolution(new Size(720, 1280))
                 .setLensFacing(CameraX.LensFacing.BACK)

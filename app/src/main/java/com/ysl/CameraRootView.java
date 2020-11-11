@@ -3,6 +3,7 @@ package com.ysl;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.SurfaceHolder;
 
 import androidx.annotation.NonNull;
@@ -17,6 +18,12 @@ public class CameraRootView extends GLSurfaceView implements Preview.OnPreviewOu
         super(context, attrs);
         //1.使用opengl es 2.0 context
         setEGLContextClientVersion(2);
+        Log.e("jbw","CamearRootView");
+        //2.设置render
+        render = new CameraRender(CameraRootView.this);
+        setRenderer(render);//创建GLThread
+        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+
         CameraHelper.init((LifecycleOwner) this.getContext(),this);
     }
 
@@ -28,9 +35,8 @@ public class CameraRootView extends GLSurfaceView implements Preview.OnPreviewOu
 
     @Override
     public void onUpdated(@NonNull Preview.PreviewOutput output) {
-        //2.设置render
-        render = new CameraRender(CameraRootView.this,output.getSurfaceTexture());
-        setRenderer(render);//创建GLThread
-        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+
+        Log.e("jbw","CamearRootView onUpdated");
+        render.setSurfaceTexture(output.getSurfaceTexture());
     }
 }
